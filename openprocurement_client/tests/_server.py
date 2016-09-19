@@ -7,6 +7,7 @@ import os
 ROOT = os.path.dirname(__file__) + '/data/'
 
 API_PATH = '/api/{0}/{1}'
+TRANSFER_PATH = API_PATH.format('0.10', "transfers")
 TENDERS_PATH = API_PATH.format('0.10', "tenders")
 PLANS_PATH = API_PATH.format('0.10', "plans")
 CONTRACTS_PATH = API_PATH.format('0.10', "contracts")
@@ -44,6 +45,20 @@ def tenders_page_get():
 def tender_create():
     response.status = 201
     return request.json
+
+def change_tender_owner(tender_id):
+    response.status = 200
+    return request.json
+
+def create_tender_transfer():
+    response.status = 201
+    return request.json
+
+def get_tender_transfer(transfer_id):
+    response.status = 200
+    return {"data": { "date": "2016-07-04T19:00:54.613149+03:00",
+                      "id": "a5a9d0af94cdebf91d8ea39b8702410a"
+           }}
 
 def tender_page(tender_id):
     tender = tender_partition(tender_id)
@@ -283,4 +298,7 @@ routs_dict = {
         "contract_document_create": (CONTRACTS_PATH + "/<contract_id>/documents", 'POST', contract_document_create),
         "contract": (CONTRACTS_PATH + "/<contract_id>", 'GET', contract_page),
         "contract_offset_error": (CONTRACTS_PATH, 'GET', contract_offset_error),
-        }
+        "create_tender_transfer": (TRANSFER_PATH, 'POST', create_tender_transfer),
+        "get_tender_transfer": (TRANSFER_PATH + "/<transfer_id>", 'GET', get_tender_transfer),
+        "change_tender_owner": (TENDERS_PATH + "/<tender_id>" + "/ownership", 'POST', change_tender_owner)
+}

@@ -55,6 +55,10 @@ TEST_CONTRACT_KEYS = munchify({
     "error_id": 'zzzxxx111'
 })
 
+TEST_TRANSFER = munchify({
+    "transfer_id" : "a5a9d0af94cdebf91d8ea39b8702410a",
+})
+
 class ViewerTenderTestCase(unittest.TestCase):
     """"""
     def setUp(self):
@@ -65,6 +69,7 @@ class ViewerTenderTestCase(unittest.TestCase):
         self.server.start()
 
         self.client = tender_client.TendersClient('', host_url=HOST_URL, api_version=API_VERSION)
+        self.transfer = tender_client.Transfer('', host_url=HOST_URL, api_version=API_VERSION)
 
         with open(ROOT + 'tenders.json') as tenders:
             self.tenders = munchify(load(tenders))
@@ -74,12 +79,26 @@ class ViewerTenderTestCase(unittest.TestCase):
     def tearDown(self):
         self.server.stop()
 
-
     def test_get_tenders(self):
         setup_routing(self.app, routs=["tenders"])
         tenders = self.client.get_tenders()
         self.assertIsInstance(tenders, Iterable)
         self.assertEqual(tenders, self.tenders.data)
+
+    def test_create_transfer(self):
+        setup_routing(self.app, routs=["create_tender_transfer"])
+        self.transfer.create_transfer()
+
+    def test_get_transfer(self):
+        setup_routing(self.app, routs=["get_tender_transfer"])
+        self.transfer.get_transfer(TEST_TRANSFER.transfer_id)
+    
+    def test_change_owner(self):
+        setup_routing(self.app, routs=["change_tender_owner"])
+        data = { "data": { "transfer": "2e92410f70a842cf9cb448608f15f71e",
+                           "id": "a5a9d0af94cdebf91d8ea39b8702410a"
+               }}
+        self.client.change_owner(self.tender, data)
 
     def test_get_tender(self):
         setup_routing(self.app, routs=["tender"])
@@ -643,6 +662,8 @@ class ContractingUserTestCase(unittest.TestCase):
         self.assertEqual(doc.data.title, file_.name)
         self.assertEqual(doc.data.id, TEST_CONTRACT_KEYS.new_document_id)
         file_.close()
+        
+
 
 
 if __name__ == '__main__':

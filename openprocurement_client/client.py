@@ -17,6 +17,7 @@ from simplejson import dumps, loads
 
 from .exceptions import InvalidResponse, NoToken
 
+
 logger = logging.getLogger(__name__)
 
 IGNORE_PARAMS = ('uri', 'path')
@@ -248,7 +249,11 @@ class TendersClient(APIBaseClient):
 
     def create_tender(self, tender):
         return self._create_resource_item(self.prefix_path, tender)
-
+    
+    def change_owner(self, tender, data):
+        url = '{}/{}/{}'.format(self.prefix_path, tender.data.id, "ownership")
+        return self.post( url, payload=dumps(data))
+    
     def create_question(self, tender, question):
         return self._create_tender_resource_item(tender, question, "questions")
 
@@ -591,3 +596,18 @@ class TendersClientSync(TendersClient):
     def get_tender(self, id, extra_headers={}):
         self.headers.update(extra_headers)
         return super(TendersClientSync, self).get_tender(id)
+
+class Transfer(APIBaseClient):
+    def __init__(self, key,
+                 host_url="https://api-sandbox.openprocurement.org",
+                 api_version='2.0',
+                 params=None,
+                 resource='transfers'):
+        super(Transfer, self).__init__(key, host_url, api_version, resource, params)
+        self.prefix_path = '/api/{}/{}'.format(api_version, resource)
+    
+    def create_transfer(self):
+        return self._create_resource_item(self.prefix_path, {"data":{}})
+    
+    def get_transfer(self, id):
+        return self._get_resource_item('{}/{}'.format(self.prefix_path, id))
