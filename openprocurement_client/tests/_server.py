@@ -1,6 +1,7 @@
 from bottle import request, response, redirect, static_file
 from munch import munchify
 from simplejson import dumps, load
+from uuid import uuid4
 import os
 
 
@@ -39,6 +40,26 @@ def tenders_page_get():
         tenders = load(json)
     return dumps(tenders)
 
+### Transfer operations
+#
+
+def create_transfer():
+    response.status = 201
+    return request.json
+
+def get_transfer(transfer_id):
+    response.status = 200
+    return {"data": { "date": "2016-07-04T19:00:54.613149+03:00",
+                      "id": transfer_id
+           }}
+
+def get_used_transfer(transfer_id):
+    response.status = 200
+    return {"data": { "date": "2016-07-04T19:00:54.613149+03:00",
+                      "id": transfer_id,
+                      "usedFor": ""
+           }}
+
 ### Tender operations
 #
 
@@ -48,17 +69,9 @@ def tender_create():
 
 def change_tender_owner(tender_id):
     response.status = 200
-    return request.json
-
-def create_tender_transfer():
-    response.status = 201
-    return request.json
-
-def get_tender_transfer(transfer_id):
-    response.status = 200
-    return {"data": { "date": "2016-07-04T19:00:54.613149+03:00",
-                      "id": "a5a9d0af94cdebf91d8ea39b8702410a"
-           }}
+    with open(ROOT + 'tendersowner.json') as json:
+        tenders = load(json)
+    return dumps(tenders)
 
 def tender_page(tender_id):
     tender = tender_partition(tender_id)
@@ -79,6 +92,10 @@ def tender_patch(tender_id):
 def tender_subpage(tender_id, subpage_name):
     subpage = tender_partition(tender_id, subpage_name)
     return dumps({"data": subpage})
+
+def change_subpage_owner(tender_id, subpage_name, subpage_id):
+    response.status = 200
+    return request.json
 
 def tender_subpage_item_create(tender_id, subpage_name):
     response.status = 201
@@ -109,6 +126,12 @@ def tender_subpage_item_delete(tender_id, subpage_name, subpage_id):
             return {}
     return location_error(subpage_name)
 
+def tender_patch_credentials(tender_id):
+    tender = tender_partition(tender_id)
+    if not tender:
+        return location_error("tender")
+    tender['access'] = {'token': uuid4().hex}
+    return tender
 
 ### Document and file operations
 #
@@ -287,6 +310,7 @@ routs_dict = {
         "tender_subpage_item": (TENDERS_PATH + "/<tender_id>/<subpage_name>/<subpage_id>", 'GET', tender_subpage_item),
         "tender_subpage_item_patch": (TENDERS_PATH + "/<tender_id>/<subpage_name>/<subpage_id>", 'PATCH', tender_subpage_item_patch),
         "tender_subpage_item_delete": (TENDERS_PATH + "/<tender_id>/<subpage_name>/<subpage_id>", 'DELETE', tender_subpage_item_delete),
+        "tender_patch_credentials": (TENDERS_PATH + "/<tender_id>/credentials", 'PATCH', tender_patch_credentials),
         "redirect": ('/redirect/<filename:path>', 'GET', get_file),
         "download": ('/download/<filename:path>', 'GET', download_file),
         "plans": (PLANS_PATH, 'GET', plans_page_get),
@@ -298,7 +322,13 @@ routs_dict = {
         "contract_document_create": (CONTRACTS_PATH + "/<contract_id>/documents", 'POST', contract_document_create),
         "contract": (CONTRACTS_PATH + "/<contract_id>", 'GET', contract_page),
         "contract_offset_error": (CONTRACTS_PATH, 'GET', contract_offset_error),
-        "create_tender_transfer": (TRANSFER_PATH, 'POST', create_tender_transfer),
-        "get_tender_transfer": (TRANSFER_PATH + "/<transfer_id>", 'GET', get_tender_transfer),
-        "change_tender_owner": (TENDERS_PATH + "/<tender_id>" + "/ownership", 'POST', change_tender_owner)
-}
+        
+        #for transfer
+        "create_transfer": (TRANSFER_PATH, 'POST', create_transfer),
+        "get_transfer": (TRANSFER_PATH + "/<transfer_id>", 'GET', get_transfer),
+        "get_used_transfer": (TRANSFER_PATH + "/<transfer_id>", 'GET', get_used_transfer),
+        
+        #for change owner
+        "change_tender_owner": (TENDERS_PATH + "/<tender_id>/ownership", 'POST', change_tender_owner),
+        "change_subpage_owner": (TENDERS_PATH + "/<tender_id>/<subpage_name>/<subpage_id>/ownership", 'POST', change_subpage_owner),
+        }

@@ -59,6 +59,62 @@ TEST_TRANSFER = munchify({
     "transfer_id" : "a5a9d0af94cdebf91d8ea39b8702410a",
 })
 
+
+class Transfer_and_Ownership(unittest.TestCase):
+    
+    def setUp(self):
+        #self._testMethodName
+        self.app = Bottle()
+        setup_routing(self.app)
+        self.server = WSGIServer(('localhost', 20602), self.app, log=None)
+        self.server.start()
+
+        self.client = tender_client.TendersClient('', host_url=HOST_URL, api_version=API_VERSION)
+        self.transfer = tender_client.Transfer('', host_url=HOST_URL, api_version=API_VERSION)
+
+        with open(ROOT + 'tenders.json') as tenders:
+            self.tenders = munchify(load(tenders))
+        with open(ROOT + TEST_KEYS.tender_id + '.json') as tender:
+            self.tender = munchify(load(tender))
+     
+    def tearDown(self):
+        self.server.stop()
+        
+        
+    def test_create_transfer(self):
+        setup_routing(self.app, routs=["create_transfer"])
+        self.transfer.create_transfer()
+
+    def test_get_transfer(self):
+        setup_routing(self.app, routs=["get_transfer"])
+        self.transfer.get_transfer(TEST_TRANSFER.transfer_id)
+    
+    def test_get_used_transfer(self):
+        setup_routing(self.app, routs=["get_used_transfer"])
+        self.transfer.get_transfer(TEST_TRANSFER.transfer_id)
+    
+    def test_change_tenders_owner(self):
+        setup_routing(self.app, routs=["change_tender_owner"])
+        data = { "data": { "transfer": "2e92410f70a842cf9cb448608f15f71e",
+                           "id": "a5a9d0af94cdebf91d8ea39b8702410a"
+               }}
+        self.client.change_tender_owner(self.tender, data)
+    
+    def test_change_bid_owner(self):
+        setup_routing(self.app, routs=["change_subpage_owner"])
+        data = { "data": { "transfer": "2e92410f70a842cf9cb448608f15f71e",
+                           "id": "a5a9d0af94cdebf91d8ea39b8702410a"
+               }}
+        self.client.change_bid_owner(self.tender.data.id, TEST_KEYS.bid_id,  data)
+        
+    def test_change_complaint_owner(self):
+        setup_routing(self.app, routs=["change_subpage_owner"])
+        data = { "data": { "transfer": "2e92410f70a842cf9cb448608f15f71e",
+                           "id": "a5a9d0af94cdebf91d8ea39b8702410a"
+               }}
+        self.client.change_complaint_owner(self.tender.data.id, TEST_KEYS_LIMITED.complaint_id,  data)
+        
+
 class ViewerTenderTestCase(unittest.TestCase):
     """"""
     def setUp(self):
@@ -85,20 +141,7 @@ class ViewerTenderTestCase(unittest.TestCase):
         self.assertIsInstance(tenders, Iterable)
         self.assertEqual(tenders, self.tenders.data)
 
-    def test_create_transfer(self):
-        setup_routing(self.app, routs=["create_tender_transfer"])
-        self.transfer.create_transfer()
-
-    def test_get_transfer(self):
-        setup_routing(self.app, routs=["get_tender_transfer"])
-        self.transfer.get_transfer(TEST_TRANSFER.transfer_id)
     
-    def test_change_owner(self):
-        setup_routing(self.app, routs=["change_tender_owner"])
-        data = { "data": { "transfer": "2e92410f70a842cf9cb448608f15f71e",
-                           "id": "a5a9d0af94cdebf91d8ea39b8702410a"
-               }}
-        self.client.change_owner(self.tender, data)
 
     def test_get_tender(self):
         setup_routing(self.app, routs=["tender"])
@@ -393,6 +436,12 @@ class UserTestCase(unittest.TestCase):
         patched_document = self.client.patch_bid_document(self.tender, document, TEST_KEYS.bid_id, TEST_KEYS.bid_document_id)
         self.assertEqual(patched_document.data.id, document.data.id)
         self.assertEqual(patched_document.data.title, document.data.title)
+
+    def test_patch_credentials(self):
+        setup_routing(self.app, routs=['tender_patch_credentials'])
+        patched_credentials = self.client.patch_credentials(self.tender.data.id, self.tender.access['token'])
+        self.assertEqual(patched_credentials.data.id, self.tender.data.id)
+        self.assertNotEqual(patched_credentials.access.token, self.tender.access['token'])
 
     ###########################################################################
     #             DOCUMENTS FILE TEST

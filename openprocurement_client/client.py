@@ -250,7 +250,7 @@ class TendersClient(APIBaseClient):
     def create_tender(self, tender):
         return self._create_resource_item(self.prefix_path, tender)
     
-    def change_owner(self, tender, data):
+    def change_tender_owner(self, tender, data):
         url = '{}/{}/{}'.format(self.prefix_path, tender.data.id, "ownership")
         return self.post( url, payload=dumps(data))
     
@@ -259,6 +259,10 @@ class TendersClient(APIBaseClient):
 
     def create_bid(self, tender, bid):
         return self._create_tender_resource_item(tender, bid, "bids")
+    
+    def change_bid_owner(self, tender_id, bid_id, data):
+        url = '{}/{}/{}/{}/{}'.format(self.prefix_path, tender_id, "bids", bid_id, "ownership")
+        return self.post( url, payload=dumps(data))
 
     def create_lot(self, tender, lot):
         return self._create_tender_resource_item(tender, lot, "lots")
@@ -271,6 +275,10 @@ class TendersClient(APIBaseClient):
 
     def create_complaint(self, tender, complaint):
         return self._create_tender_resource_item(tender, complaint, "complaints")
+    
+    def change_complaint_owner(self, tender_id, complaint_id, data):
+        url = '{}/{}/{}/{}/{}'.format(self.prefix_path, tender_id, "complaints", complaint_id, "ownership")
+        return self.post( url, payload=dumps(data))
 
     def create_award_complaint(self, tender, complaint, award_id):
         return self._create_resource_item(
@@ -412,6 +420,11 @@ class TendersClient(APIBaseClient):
 
     def patch_contract(self, tender, contract):
         return self._patch_tender_resource_item(tender, contract, "contracts")
+
+    def patch_credentials(self, id, access_token):
+        return self._patch_resource_item('{}/{}/credentials'.format(self.prefix_path, id),
+                                         payload={},
+                                         headers={'X-Access-Token': access_token})
 
     ###########################################################################
     #             UPLOAD FILE API METHODS
